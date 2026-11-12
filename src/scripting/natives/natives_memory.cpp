@@ -323,14 +323,7 @@ void HookFunction(ScriptContext& script_context)
         return;
     }
 
-    try
-    {
-        function->AddHook(callback, post);
-    }
-    catch (const std::exception& exception)
-    {
-        script_context.ThrowNativeError("%s", exception.what());
-    }
+    function->AddHook(callback, post);
 }
 
 void UnhookFunction(ScriptContext& script_context)

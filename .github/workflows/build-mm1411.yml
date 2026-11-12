@@ -1,0 +1,49 @@
+name: Build MM1411
+
+permissions: {}
+
+on:
+  push:
+    branches: ["mm1411"]
+  workflow_dispatch:
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest
+    steps:
+      - name: Prepare env
+        shell: bash
+        run: |
+          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+          echo "SEMVER=1.0.379-mm1411" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: "recursive"
+
+      - name: Check Metamod plugin API
+        shell: bash
+        run: |
+          grep -E "define METAMOD_PLAPI_VERSION[[:space:]]+17" libraries/metamod-source/core/ISmmPluginExt.h
+          test -f libraries/metamod-source/core/sourcehook/sourcehook.cpp
+          git -C libraries/metamod-source rev-parse HEAD
+          git -C libraries/hl2sdk-cs2 rev-parse HEAD
+
+      - name: Build
+        run: |
+          mkdir -p build
+          cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --config Release -- -j16
+
+      - name: Clean build directory
+        run: |
+          mkdir build/output/
+          mv build/addons build/output
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: counterstrikesharp-linux-mm1411
+          path: build/output/

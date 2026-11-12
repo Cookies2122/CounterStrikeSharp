@@ -1,4 +1,3 @@
-#include "core/dynamic_hook.h"
 /*
  *  This file is part of CounterStrikeSharp.
  *  CounterStrikeSharp is free software: you can redistribute it and/or modify
@@ -20,18 +19,19 @@
 #include "scripting/autonative.h"
 #include "scripting/script_engine.h"
 #include "core/function.h"
-#include <cassert>
+#include "pch.h"
+#include "dynohook/core.h"
+#include "dynohook/manager.h"
 
 namespace counterstrikesharp {
 
 void DHookGetReturn(ScriptContext& script_context)
 {
-    auto hook = script_context.GetArgument<DynamicHookContext*>(0);
+    auto hook = script_context.GetArgument<dyno::Hook*>(0);
     auto dataType = script_context.GetArgument<DataType_t>(1);
     if (hook == nullptr)
     {
         script_context.ThrowNativeError("Invalid hook");
-        return;
     }
 
     switch (dataType)
@@ -82,19 +82,18 @@ void DHookGetReturn(ScriptContext& script_context)
             script_context.SetResult(hook->getReturnValue<const char*>());
             break;
         default:
-            script_context.ThrowNativeError("Unsupported dynamic hook type");
+            assert(!"Unknown function parameter type!");
             break;
     }
 }
 
 void DHookSetReturn(ScriptContext& script_context)
 {
-    auto hook = script_context.GetArgument<DynamicHookContext*>(0);
+    auto hook = script_context.GetArgument<dyno::Hook*>(0);
     auto dataType = script_context.GetArgument<DataType_t>(1);
     if (hook == nullptr)
     {
         script_context.ThrowNativeError("Invalid hook");
-        return;
     }
 
     auto valueIndex = 2;
@@ -147,20 +146,19 @@ void DHookSetReturn(ScriptContext& script_context)
             hook->setReturnValue(script_context.GetArgument<const char*>(valueIndex));
             break;
         default:
-            script_context.ThrowNativeError("Unsupported dynamic hook type");
+            assert(!"Unknown function parameter type!");
             break;
     }
 }
 
 void DHookGetParam(ScriptContext& script_context)
 {
-    auto hook = script_context.GetArgument<DynamicHookContext*>(0);
+    auto hook = script_context.GetArgument<dyno::Hook*>(0);
     auto dataType = script_context.GetArgument<DataType_t>(1);
     auto paramIndex = script_context.GetArgument<int>(2);
     if (hook == nullptr)
     {
         script_context.ThrowNativeError("Invalid hook");
-        return;
     }
 
     switch (dataType)
@@ -211,20 +209,19 @@ void DHookGetParam(ScriptContext& script_context)
             script_context.SetResult(hook->getArgument<const char*>(paramIndex));
             break;
         default:
-            script_context.ThrowNativeError("Unsupported dynamic hook type");
+            assert(!"Unknown function parameter type!");
             break;
     }
 }
 
 void DHookSetParam(ScriptContext& script_context)
 {
-    auto hook = script_context.GetArgument<DynamicHookContext*>(0);
+    auto hook = script_context.GetArgument<dyno::Hook*>(0);
     auto dataType = script_context.GetArgument<DataType_t>(1);
     auto paramIndex = script_context.GetArgument<int>(2);
     if (hook == nullptr)
     {
         script_context.ThrowNativeError("Invalid hook");
-        return;
     }
 
     auto valueIndex = 3;
@@ -277,27 +274,15 @@ void DHookSetParam(ScriptContext& script_context)
             hook->setArgument(paramIndex, script_context.GetArgument<const char*>(valueIndex));
             break;
         default:
-            script_context.ThrowNativeError("Unsupported dynamic hook type");
+            assert(!"Unknown function parameter type!");
             break;
     }
 }
 
-template <void (*Handler)(ScriptContext&)> void CheckedDynamicHookNative(ScriptContext& context)
-{
-    try
-    {
-        Handler(context);
-    }
-    catch (const std::exception& exception)
-    {
-        context.ThrowNativeError("%s", exception.what());
-    }
-}
-
 REGISTER_NATIVES(dynamichooks, {
-    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_GET_RETURN", CheckedDynamicHookNative<DHookGetReturn>);
-    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_SET_RETURN", CheckedDynamicHookNative<DHookSetReturn>);
-    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_GET_PARAM", CheckedDynamicHookNative<DHookGetParam>);
-    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_SET_PARAM", CheckedDynamicHookNative<DHookSetParam>);
+    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_GET_RETURN", DHookGetReturn);
+    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_SET_RETURN", DHookSetReturn);
+    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_GET_PARAM", DHookGetParam);
+    ScriptEngine::RegisterNativeHandler("DYNAMIC_HOOK_SET_PARAM", DHookSetParam);
 })
 } // namespace counterstrikesharp
